@@ -1,0 +1,28 @@
+.group {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.button {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font: inherit;
+}
+
+.button:hover {
+  color: var(--text);
+}
+
+.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.active:hover {
+  color: #fff;
+}

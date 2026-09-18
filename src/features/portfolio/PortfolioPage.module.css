@@ -1,0 +1,6 @@
+.name {
+  font-weight: 500;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

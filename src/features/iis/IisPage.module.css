@@ -1,0 +1,90 @@
+.section {
+  margin-top: 28px;
+}
+
+.heading {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.advice {
+  margin: 0;
+  padding-left: 20px;
+  max-width: 900px;
+  line-height: 1.6;
+}
+
+.advice li + li {
+  margin-top: 8px;
+}
+
+.note {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 12px 0 0;
+  max-width: 900px;
+}
+
+.settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.fieldInput {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fieldInput input,
+.cellInput {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.cellInput {
+  width: 120px;
+  text-align: right;
+  padding: 4px 6px;
+}
+
+.suffix {
+  color: var(--text-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  align-self: end;
+}

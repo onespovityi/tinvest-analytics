@@ -1,0 +1,9 @@
+.state {
+  color: var(--text-muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.error {
+  color: var(--negative);
+}

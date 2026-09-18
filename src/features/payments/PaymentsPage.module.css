@@ -1,0 +1,11 @@
+.heading {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 28px 0 12px;
+}
+
+.instrument {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

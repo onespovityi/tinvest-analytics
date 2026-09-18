@@ -1,0 +1,124 @@
+.root {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  width: 14px;
+  height: 0;
+  border-top: 2px solid;
+  display: inline-block;
+}
+
+.swatchDashed {
+  border-top-style: dashed;
+}
+
+.plot {
+  position: relative;
+}
+
+.svg {
+  display: block;
+  cursor: crosshair;
+}
+
+.grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.tick,
+.axisLabel {
+  font-size: 10px;
+  fill: var(--text-muted);
+}
+
+.crosshair {
+  stroke: var(--text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.marker {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.tooltip {
+  position: absolute;
+  top: 8px;
+  margin-left: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.tooltipTitle {
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.tooltipRow {
+  display: grid;
+  grid-template-columns: 8px auto 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.tooltipValue {
+  text-align: right;
+}
+
+.empty {
+  color: var(--text-muted);
+  padding: 40px 0;
+  text-align: center;
+}

@@ -1,0 +1,36 @@
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.select select {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 8px;
+}
+
+.section {
+  margin-top: 16px;
+}
+
+.note {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 16px 0 0;
+  max-width: 800px;
+}
