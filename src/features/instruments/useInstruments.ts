@@ -2,6 +2,7 @@ import { useQueries } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { getInstrument, type InstrumentInfo } from '../../api/instruments'
 import type { AccountKey, InstrumentType } from '../../api/types'
+import { WEEK } from '../../app/queryClient'
 import type { Position } from '../portfolio/model'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -24,7 +25,7 @@ export function useInstruments(refs: InstrumentRef[] | undefined): Map<string, I
       queryKey: ['instrument', ref.uid],
       queryFn: () => getInstrument(ref.account, ref.type, ref.uid),
       staleTime: DAY,
-      gcTime: DAY,
+      gcTime: WEEK,
     })),
     combine: (rs) => rs.map((r) => r.data),
   })

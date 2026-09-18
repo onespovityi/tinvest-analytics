@@ -1,8 +1,9 @@
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { findInstrumentVariants, getBondCoupons } from '../../api/instruments'
 import { getDailyCandles } from '../../api/marketdata'
 import type { AccountKey, Candle, Coupon, InstrumentType } from '../../api/types'
+import { WEEK } from '../../app/queryClient'
 import { ACCOUNT_KEYS } from '../../shared/account/accountContext'
 import { CURRENCY_FIGI } from '../../shared/rates/useRates'
 import { useInstruments, type InstrumentRef } from '../instruments/useInstruments'
@@ -35,16 +36,39 @@ export interface HistoryState {
   progress: { loaded: number; total: number }
 }
 
-function candleQuery(account: AccountKey, id: string, from: string, to: string) {
+const DAY = 24 * HOUR
+
+/** Свечи двух листингов или двух запросов склеиваем по времени; свежие перекрывают старые (незакрытая свеча дня). */
+function mergeCandles(older: Candle[], newer: Candle[]): Candle[] {
+  const byTime = new Map<string, Candle>()
+  for (const c of older) byTime.set(c.time, c)
+  for (const c of newer) byTime.set(c.time, c)
+  return [...byTime.values()].sort((a, b) => a.time.localeCompare(b.time))
+}
+
+/**
+ * Дневные свечи с начала истории. Ключ без «до сегодня», поэтому кэш (в том числе восстановленный
+ * из IndexedDB) переживает смену дня: при обновлении докачиваем только хвост с последней свечи.
+ */
+function candleQuery(queryClient: QueryClient, account: AccountKey, id: string, from: string) {
+  const queryKey = ['candles', id, from]
   return {
-    queryKey: ['candles', id, from, to],
-    queryFn: () => getDailyCandles(account, id, new Date(`${from}T00:00:00Z`), new Date()),
+    queryKey,
+    queryFn: async () => {
+      const cached = queryClient.getQueryData<Candle[]>(queryKey)
+      const last = cached?.at(-1)
+      // последняя свеча могла быть незакрытой — перезапрашиваем пару дней внахлёст
+      const start = last ? new Date(new Date(last.time).getTime() - 2 * DAY) : new Date(`${from}T00:00:00Z`)
+      const fresh = await getDailyCandles(account, id, start, new Date())
+      return cached ? mergeCandles(cached, fresh) : fresh
+    },
     staleTime: HOUR,
-    gcTime: 24 * HOUR,
+    gcTime: WEEK,
   }
 }
 
 export function useHistory(benchmark: Benchmark | null): HistoryState {
+  const queryClient = useQueryClient()
   const portfolio = usePortfolio()
   const ops = useOperations()
   const positions = portfolio.summary?.positions
@@ -90,12 +114,12 @@ export function useHistory(benchmark: Benchmark | null): HistoryState {
   }, [operations, instruments])
 
   const candles = useQueries({
-    queries: securityRefs.map((r) => candleQuery(r.account, r.uid, candlesFrom, today)),
+    queries: securityRefs.map((r) => candleQuery(queryClient, r.account, r.uid, candlesFrom)),
     combine: (rs) => ({ pending: rs.filter((r) => r.isPending).length, data: rs.map((r) => r.data) }),
   })
 
   const rateCandles = useQueries({
-    queries: currencies.map((c) => candleQuery(account, CURRENCY_FIGI[c], candlesFrom, today)),
+    queries: currencies.map((c) => candleQuery(queryClient, account, CURRENCY_FIGI[c], candlesFrom)),
     combine: (rs) => ({ pending: rs.filter((r) => r.isPending).length, data: rs.map((r) => r.data) }),
   })
 
@@ -104,6 +128,7 @@ export function useHistory(benchmark: Benchmark | null): HistoryState {
       queryKey: ['coupons-history', r.uid, firstDay],
       queryFn: () => getBondCoupons(r.account, r.uid, `${firstDay}T00:00:00Z`, new Date(Date.now() + 366 * 24 * HOUR).toISOString()),
       staleTime: 24 * HOUR,
+      gcTime: WEEK,
     })),
     combine: (rs) => ({ pending: rs.filter((r) => r.isPending).length, data: rs.map((r) => r.data) }),
   })
@@ -114,9 +139,10 @@ export function useHistory(benchmark: Benchmark | null): HistoryState {
     queryFn: () => findInstrumentVariants(account, benchmark!.ticker, 'etf'),
     enabled: Boolean(benchmark),
     staleTime: Infinity,
+    gcTime: WEEK,
   })
   const benchmarkCandles = useQueries({
-    queries: (benchmarkVariants.data ?? []).map((v) => candleQuery(account, v.uid, candlesFrom, today)),
+    queries: (benchmarkVariants.data ?? []).map((v) => candleQuery(queryClient, account, v.uid, candlesFrom)),
     combine: (rs) => ({ pending: rs.some((r) => r.isPending), data: rs.every((r) => r.data) ? rs.flatMap((r) => r.data ?? []) : undefined }),
   })
 

@@ -9,7 +9,8 @@ const ACCOUNT_OPTIONS = (['all', ...ACCOUNT_KEYS] as AccountSelection[]).map((va
 }))
 
 const PAGES = [
-  { to: '/', label: 'Портфель' },
+  { to: '/', label: 'Сводка' },
+  { to: '/portfolio', label: 'Портфель' },
   { to: '/operations', label: 'Операции' },
   { to: '/payments', label: 'Выплаты' },
   { to: '/allocation', label: 'Структура' },

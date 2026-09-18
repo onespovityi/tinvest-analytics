@@ -16,7 +16,15 @@ export const TARGET_LABELS: Record<TargetType, string> = {
 /** Целевые доли в процентах; в сумме должно быть 100. */
 export type Targets = Record<TargetType, number>
 
-const STORAGE_KEY = 'tinvest-analytics:targets'
+const STORAGE_KEY = 'tinvest-analytics:targets:v2'
+
+/** План владельца: акции + фонды 60 %, остальное — облигации, свободные деньги не держим. */
+export const PLAN_TARGETS: Targets = { bond: 40, etf: 35, share: 25, currency: 0 }
+
+/** Цели свои для каждого режима шапки: на одном ИИС структура другая, чем «Всего». */
+function storageKey(scope: string) {
+  return `${STORAGE_KEY}:${scope}`
+}
 
 export function isTargetType(type: InstrumentType): type is TargetType {
   return (TARGET_TYPES as readonly string[]).includes(type)
@@ -34,24 +42,33 @@ export function targetsFromActual(summary: PortfolioSummary): Targets {
   return Object.fromEntries(TARGET_TYPES.map((t, i) => [t, rounded[i]])) as Targets
 }
 
-function load(): Targets | null {
+function load(scope: string): Targets | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(storageKey(scope))
     return raw ? (JSON.parse(raw) as Targets) : null
   } catch {
     return null
   }
 }
 
-export function useTargets(): [Targets | null, (targets: Targets) => void] {
-  const [targets, setTargets] = useState<Targets | null>(load)
-  const save = useCallback((next: Targets) => {
-    setTargets(next)
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-    } catch {
-      // нет хранилища — живём в памяти до перезагрузки
-    }
-  }, [])
+export function useTargets(scope: string): [Targets | null, (targets: Targets) => void] {
+  const [targets, setTargets] = useState<Targets | null>(() => load(scope))
+  const [loadedScope, setLoadedScope] = useState(scope)
+  // переключили шапку — подхватываем цели того режима
+  if (loadedScope !== scope) {
+    setLoadedScope(scope)
+    setTargets(load(scope))
+  }
+  const save = useCallback(
+    (next: Targets) => {
+      setTargets(next)
+      try {
+        localStorage.setItem(storageKey(scope), JSON.stringify(next))
+      } catch {
+        // нет хранилища — живём в памяти до перезагрузки
+      }
+    },
+    [scope],
+  )
   return [targets, save]
 }

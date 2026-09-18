@@ -6,6 +6,7 @@ import { InstrumentLink } from '../../shared/ui/InstrumentLink'
 import { ErrorState, Loading } from '../../shared/ui/PageState'
 import { Stats, type StatItem } from '../../shared/ui/Stats'
 import table from '../../shared/ui/table.module.css'
+import { BondsSection } from '../bonds/BondsSection'
 import { usePositionInstruments } from '../instruments/useInstruments'
 import { useOperations } from '../operations/useOperations'
 import { firstCashFlowDate, portfolioXirr } from '../operations/xirr'
@@ -98,6 +99,7 @@ export function PortfolioPage() {
           </tbody>
         </table>
       </div>
+      <BondsSection positions={portfolio.positions} instruments={instruments} />
     </>
   )
 }

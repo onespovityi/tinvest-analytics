@@ -1,0 +1,20 @@
+.section {
+  margin-top: 32px;
+}
+
+.heading {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.note {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 12px 0 0;
+  max-width: 900px;
+}

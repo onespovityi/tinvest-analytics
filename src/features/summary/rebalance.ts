@@ -5,6 +5,12 @@ import { TARGET_TYPES, type TargetType, type Targets } from './targets'
 /** Отклонение больше этого (в процентных пунктах) — уже повод действовать. */
 export const DRIFT_THRESHOLD = 3
 
+/** Сделки мельче этого не предлагаем — комиссия и внимание дороже. */
+const MIN_TRADE = 1000
+
+/** Больше перекладок за один визит — уже не план, а суета. */
+const MAX_SWAPS = 3
+
 export interface TypeDrift {
   type: TargetType
   target: number
@@ -15,17 +21,20 @@ export interface TypeDrift {
   gap: number
 }
 
-export interface Suggestion {
-  kind: 'buy' | 'sell'
+/** Одна сторона действия: что и на сколько. Бумага — самая крупная позиция типа; может не быть. */
+export interface Leg {
   type: TargetType
   amount: number
-  /** Конкретная бумага — самая крупная позиция этого типа; может не быть, если тип пустой. */
   position?: Position
   info?: InstrumentInfo
   lots?: number
-  /** Покупка на свободные деньги, а не за счёт продажи чего-то. */
-  fromCash: boolean
 }
+
+export type Suggestion =
+  /** Покупка на свободные деньги. */
+  | { kind: 'buy'; buy: Leg }
+  /** Денег нет — перекладываем: продаём перевешенное, покупаем недостающее. */
+  | { kind: 'swap'; sell: Leg; buy: Leg }
 
 export interface Rebalance {
   drifts: TypeDrift[]
@@ -33,24 +42,25 @@ export interface Rebalance {
   suggestions: Suggestion[]
 }
 
-/** Сколько лотов бумаги можно купить на сумму, и сколько это будет стоить. */
-function lotsFor(position: Position, info: InstrumentInfo | undefined, amount: number): { lots: number; cost: number } {
-  const lot = Math.max(1, info?.lot ?? 1)
-  const unitPrice = position.currentPrice + position.nkd
-  const lotPrice = unitPrice * lot
-  if (lotPrice <= 0) return { lots: 0, cost: 0 }
-  const lots = Math.floor(amount / lotPrice)
-  return { lots, cost: lots * lotPrice }
-}
-
 function largestOfType(positions: Position[], type: TargetType): Position | undefined {
   return positions.filter((p) => p.instrumentType === type && p.currency.toLowerCase() === 'rub').sort((a, b) => b.value - a.value)[0]
 }
 
+/** Сколько целых лотов бумаги укладывается в сумму, и сколько это стоит на самом деле. */
+function makeLeg(type: TargetType, amount: number, positions: Position[], instruments: Map<string, InstrumentInfo>): Leg {
+  const position = largestOfType(positions, type)
+  if (!position) return { type, amount }
+  const info = instruments.get(position.instrumentUid)
+  const lotPrice = (position.currentPrice + position.nkd) * Math.max(1, info?.lot ?? 1)
+  const lots = lotPrice > 0 ? Math.floor(amount / lotPrice) : 0
+  return { type, amount: lots > 0 ? lots * lotPrice : amount, position, info, lots }
+}
+
 /**
  * План ребалансировки по типам активов.
- * Сначала тратим свободные рубли на самые «недокупленные» типы (пропорционально недобору),
- * и только если после этого отклонение всё ещё больше порога — предлагаем продажи.
+ * 1. Свободные рубли сверх целевой доли кэша тратим на самые «недокупленные» типы (пропорционально недобору).
+ * 2. Если после этого какой-то тип всё ещё отклонён больше порога — перекладки (до трёх):
+ *    продать самый перевешенный тип, купить самый недовешенный, на одну и ту же сумму.
  */
 export function rebalance(summary: PortfolioSummary, targets: Targets, instruments: Map<string, InstrumentInfo>): Rebalance {
   const total = summary.total
@@ -62,46 +72,42 @@ export function rebalance(summary: PortfolioSummary, targets: Targets, instrumen
 
   const freeCash = Object.values(summary.cashByAccount).reduce((a, b) => a + (b ?? 0), 0)
   const suggestions: Suggestion[] = []
+  // остаток недобора/перебора после покупок на кэш — по нему решаем про перекладку
+  const remaining = new Map<TargetType, number>(drifts.map((d) => [d.type, d.gap]))
 
-  // деньги сверх целевой доли кэша — то, что можно инвестировать
-  const cashTarget = (targets.currency / 100) * total
-  let spendable = Math.max(0, freeCash - cashTarget)
-  const deficits = drifts.filter((d) => d.type !== 'currency' && d.gap > 0)
+  const spendable = Math.max(0, freeCash - (targets.currency / 100) * total)
+  const deficits = drifts.filter((d) => d.type !== 'currency' && d.gap > 0).sort((a, b) => b.gap - a.gap)
   const totalDeficit = deficits.reduce((acc, d) => acc + d.gap, 0)
 
   if (spendable > 0 && totalDeficit > 0) {
     const budget = Math.min(spendable, totalDeficit)
-    for (const d of deficits.sort((a, b) => b.gap - a.gap)) {
-      const amount = (budget * d.gap) / totalDeficit
-      const position = largestOfType(summary.positions, d.type)
-      const info = position ? instruments.get(position.instrumentUid) : undefined
-      const lots = position ? lotsFor(position, info, amount) : undefined
-      if (lots && lots.lots === 0) continue
-      suggestions.push({ kind: 'buy', type: d.type, amount: lots ? lots.cost : amount, position, info, lots: lots?.lots, fromCash: true })
-      spendable -= lots ? lots.cost : amount
+    for (const d of deficits) {
+      const leg = makeLeg(d.type, (budget * d.gap) / totalDeficit, summary.positions, instruments)
+      if (leg.lots === 0 || leg.amount < MIN_TRADE) continue
+      suggestions.push({ kind: 'buy', buy: leg })
+      remaining.set(d.type, d.gap - leg.amount)
     }
   }
 
-  // что останется перекошенным после покупок на кэш — уже через продажу
-  for (const d of drifts) {
-    if (d.type === 'currency') continue
-    const bought = suggestions.filter((s) => s.type === d.type && s.fromCash).reduce((acc, s) => acc + s.amount, 0)
-    const remainingGap = d.gap - bought
-    const remainingDrift = total > 0 ? (-remainingGap / total) * 100 : 0
-    if (Math.abs(remainingDrift) < DRIFT_THRESHOLD) continue
-    const position = largestOfType(summary.positions, d.type)
-    const info = position ? instruments.get(position.instrumentUid) : undefined
-    const amount = Math.abs(remainingGap)
-    const lots = position ? lotsFor(position, info, amount) : undefined
-    suggestions.push({
-      kind: remainingGap > 0 ? 'buy' : 'sell',
-      type: d.type,
-      amount: lots && lots.lots > 0 ? lots.cost : amount,
-      position,
-      info,
-      lots: lots?.lots,
-      fromCash: false,
-    })
+  // перекладки: самый перевешенный тип → самый недовешенный, пока отклонение больше порога
+  const securities = drifts.filter((d) => d.type !== 'currency').map((d) => d.type)
+  for (let i = 0; i < MAX_SWAPS; i++) {
+    const ranked = securities.map((type) => ({ type, gap: remaining.get(type) ?? 0 })).sort((a, b) => b.gap - a.gap)
+    const sink = ranked[0]
+    const source = ranked[ranked.length - 1]
+    if (!sink || !source || sink.gap <= 0 || source.gap >= 0) break
+    const worstDrift = (Math.max(sink.gap, -source.gap) / (total || 1)) * 100
+    if (worstDrift < DRIFT_THRESHOLD) break
+
+    const amount = Math.min(sink.gap, -source.gap)
+    if (amount < MIN_TRADE) break
+    const buy = makeLeg(sink.type, amount, summary.positions, instruments)
+    if (buy.lots === 0) break
+    // продаём ровно на столько, сколько реально стоит покупка целыми лотами
+    const sell = makeLeg(source.type, buy.amount, summary.positions, instruments)
+    suggestions.push({ kind: 'swap', sell, buy })
+    remaining.set(sink.type, sink.gap - buy.amount)
+    remaining.set(source.type, source.gap + buy.amount)
   }
 
   return { drifts, freeCash, suggestions }
