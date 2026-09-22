@@ -8,7 +8,15 @@ export const WEEK = 7 * 24 * 60 * 60 * 1000
  * Что переживает перезагрузку: тяжёлое и редко меняющееся. Портфель и операции — нет,
  * они должны быть свежими при каждом заходе.
  */
-const PERSISTED_KEYS = new Set(['candles', 'coupons-history', 'coupons-to-maturity', 'instrument', 'instrument-variants'])
+const PERSISTED_KEYS = new Set([
+  'candles',
+  'coupons-history',
+  'coupons-to-maturity',
+  'instrument',
+  'instrument-variants',
+  'screener-bonds',
+  'screener-shares',
+])
 
 /** Поднимать при несовместимом изменении формата кэша — старый просто выбросится. */
 const CACHE_VERSION = 'v1'

@@ -1,4 +1,11 @@
-import type { InstrumentInfo } from '../../api/instruments'
+import type { InstrumentType } from '../../api/types'
+
+/** Достаточно типа и сектора — так функцией можно пользоваться и для бумаг не из портфеля. */
+export interface SectorSource {
+  type: InstrumentType
+  sector: string
+  focusType?: string
+}
 
 const SECTOR_LABELS: Record<string, string> = {
   it: 'IT',
@@ -33,10 +40,10 @@ const FOCUS_LABELS: Record<string, string> = {
 }
 
 /** Название сектора по-русски; для инструментов без сектора — по типу. */
-export function sectorLabel(info: InstrumentInfo | undefined): string {
+export function sectorLabel(info: SectorSource | undefined): string {
   if (!info) return '…'
   if (info.type === 'currency') return 'Валюта'
-  if (info.type === 'etf') return FOCUS_LABELS[info.focusType] ?? 'Фонды'
+  if (info.type === 'etf') return FOCUS_LABELS[info.focusType ?? ''] ?? 'Фонды'
   if (!info.sector) return 'Другое'
   return SECTOR_LABELS[info.sector] ?? info.sector
 }

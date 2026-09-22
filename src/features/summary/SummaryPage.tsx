@@ -22,12 +22,39 @@ import { useLastVisit } from './useLastVisit'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-function SinceLastVisit({ operations, since }: { operations: Operation[]; since: Date | null }) {
+function formatDateTime(date: Date): string {
+  return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
+interface SinceProps {
+  operations: Operation[]
+  since: Date | null
+  onMarkSeen: () => void
+}
+
+function SinceLastVisit({ operations, since, onMarkSeen }: SinceProps) {
   const { toRub } = useRates()
-  if (!since) return <p className={styles.muted}>Это первый визит — в следующий раз здесь будет то, что изменилось.</p>
+  const mark = (
+    <button type="button" className={styles.reset} onClick={onMarkSeen}>
+      отметить просмотренным
+    </button>
+  )
+  if (!since) {
+    return (
+      <p className={styles.muted}>
+        Точка отсчёта ещё не задана — в следующий раз здесь будет то, что изменилось. {mark}
+      </p>
+    )
+  }
 
   const fresh = operations.filter((op) => op.date > since)
-  if (fresh.length === 0) return <p className={styles.muted}>С {formatDate(since)} операций не было.</p>
+  if (fresh.length === 0) {
+    return (
+      <p className={styles.muted}>
+        С {formatDateTime(since)} операций не было. {mark}
+      </p>
+    )
+  }
 
   const sum = (pred: (op: Operation) => boolean) => fresh.reduce((acc, op) => (pred(op) ? acc + toRub(op.payment, op.currency) : acc), 0)
   const coupons = sum(isCoupon)
@@ -43,7 +70,7 @@ function SinceLastVisit({ operations, since }: { operations: Operation[]; since:
 
   return (
     <p>
-      С {formatDate(since)}: {items.join(', ') || `${fresh.length} операций`}.
+      С {formatDateTime(since)}: {items.join(', ') || `${fresh.length} операций`}. {mark}
     </p>
   )
 }
@@ -104,11 +131,11 @@ function SuggestionRow({ s }: { s: Suggestion }) {
 }
 
 export function SummaryPage() {
-  const since = useLastVisit()
+  const { since, markSeen } = useLastVisit()
   const { summary, isPending, error } = usePortfolio()
   const { operations } = useOperations()
   const instruments = usePositionInstruments(summary?.positions)
-  const upcoming = useUpcomingPayments(summary?.positions, instruments)
+  const upcoming = useUpcomingPayments(summary?.positions, instruments, operations)
   const { selection } = useAccount()
   const [storedTargets, saveTargets] = useTargets(selection)
   const iis = useAccountData('iis')
@@ -194,7 +221,7 @@ export function SummaryPage() {
 
       <section className={styles.section}>
         <h2 className={styles.heading}>С прошлого визита</h2>
-        {operations ? <SinceLastVisit operations={operations} since={since} /> : <p className={styles.muted}>Загружаем операции…</p>}
+        {operations ? <SinceLastVisit operations={operations} since={since} onMarkSeen={markSeen} /> : <p className={styles.muted}>Загружаем операции…</p>}
       </section>
 
       <section className={styles.section}>

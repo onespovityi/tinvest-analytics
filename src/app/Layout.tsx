@@ -16,6 +16,7 @@ const PAGES = [
   { to: '/allocation', label: 'Структура' },
   { to: '/history', label: 'Аналитика' },
   { to: '/iis', label: 'ИИС' },
+  { to: '/market', label: 'Рынок' },
 ]
 
 export function Layout() {

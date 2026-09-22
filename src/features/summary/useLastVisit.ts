@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
-const LAST_KEY = 'tinvest-analytics:last-visit'
-const CURRENT_KEY = 'tinvest-analytics:current-visit'
-/** Перезагрузки в течение получаса — тот же визит, «с прошлого раза» не сдвигаем. */
-const SESSION_MS = 30 * 60 * 1000
+/** Точка отсчёта для «с прошлого визита». */
+const SINCE_KEY = 'tinvest-analytics:visit-since'
+/** Когда страницу видели в последний раз — обновляется, пока она открыта, и при уходе. */
+const SEEN_KEY = 'tinvest-analytics:visit-seen'
+/** Отлучился меньше чем на полчаса — это ещё тот же визит, точку отсчёта не двигаем. */
+const BREAK_MS = 30 * 60 * 1000
+const HEARTBEAT_MS = 60 * 1000
 
 function read(key: string): Date | null {
   try {
@@ -22,15 +25,41 @@ function write(key: string, date: Date) {
   }
 }
 
-/** Дата прошлого визита (null — первый раз). Текущий визит фиксируется при первом вызове. */
-export function useLastVisit(): Date | null {
-  const [since] = useState<Date | null>(() => {
-    const now = new Date()
-    const current = read(CURRENT_KEY)
-    if (current && now.getTime() - current.getTime() < SESSION_MS) return read(LAST_KEY)
-    if (current) write(LAST_KEY, current)
-    write(CURRENT_KEY, now)
-    return current ?? read(LAST_KEY)
+/**
+ * Дата прошлого визита (null — первый раз) и способ «отметить просмотренным».
+ * Новый визит начинается, если страницу не видели дольше получаса: точкой отсчёта становится
+ * момент, когда её видели в последний раз.
+ */
+export function useLastVisit(): { since: Date | null; markSeen: () => void } {
+  const [since, setSince] = useState<Date | null>(() => {
+    const seen = read(SEEN_KEY)
+    const stored = read(SINCE_KEY)
+    if (seen && Date.now() - seen.getTime() > BREAK_MS) return seen
+    return stored
   })
-  return since
+
+  useEffect(() => {
+    if (since) write(SINCE_KEY, since)
+    const touch = () => write(SEEN_KEY, new Date())
+    touch()
+    const timer = setInterval(touch, HEARTBEAT_MS)
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') touch()
+    }
+    document.addEventListener('visibilitychange', onHide)
+    window.addEventListener('pagehide', touch)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onHide)
+      window.removeEventListener('pagehide', touch)
+    }
+  }, [since])
+
+  const markSeen = useCallback(() => {
+    const now = new Date()
+    write(SINCE_KEY, now)
+    setSince(now)
+  }, [])
+
+  return { since, markSeen }
 }

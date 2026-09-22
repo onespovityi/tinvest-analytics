@@ -61,7 +61,7 @@ export function PaymentsPage() {
   const portfolio = usePortfolio()
   const ops = useOperations()
   const instruments = usePositionInstruments(portfolio.summary?.positions)
-  const upcoming = useUpcomingPayments(portfolio.summary?.positions, instruments)
+  const upcoming = useUpcomingPayments(portfolio.summary?.positions, instruments, ops.operations)
   const { toRub } = useRates()
 
   const columns = useMemo(() => (ops.operations ? receivedByMonth(ops.operations, toRub) : []), [ops.operations, toRub])
