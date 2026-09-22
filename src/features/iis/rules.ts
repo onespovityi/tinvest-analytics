@@ -34,8 +34,8 @@ export function defaultSettings(currentYear: number, minCloseYear: number): IisS
     minYears: 5,
     convertedYearsCap: 3,
     profitExemptionCap: 30_000_000,
-    // стартовое значение под владельца: зарплата 180 000 × 4 месяца × 13 %; правится в таблице
-    ndflByYear: { 2026: 93_600 },
+    // уплаченный НДФЛ по годам вводится на странице ИИС — у каждого свой
+    ndflByYear: {},
     plannedContribution: 400_000,
     expectedReturn: 15,
     closeYear: Math.max(minCloseYear, currentYear + 5),
