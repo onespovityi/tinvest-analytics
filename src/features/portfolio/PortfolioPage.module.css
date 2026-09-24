@@ -4,3 +4,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.daily {
+  margin-top: 32px;
+}
+
+.dailyHeading {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}

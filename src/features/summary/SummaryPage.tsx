@@ -8,6 +8,7 @@ import { ErrorState, Loading } from '../../shared/ui/PageState'
 import { Stats, type StatItem } from '../../shared/ui/Stats'
 import table from '../../shared/ui/table.module.css'
 import { usePositionInstruments } from '../instruments/useInstruments'
+import { DailyMovers } from '../portfolio/DailyMovers'
 import { contributionsByYear, iisReminders, minHoldingEnd } from '../iis/rules'
 import { useIisSettings } from '../iis/useIisSettings'
 import { isCoupon, isDividend, type Operation } from '../operations/model'
@@ -202,6 +203,11 @@ export function SummaryPage() {
   return (
     <>
       <Stats items={stats} />
+
+      <section className={styles.section}>
+        <h2 className={styles.heading}>Движение за день</h2>
+        <DailyMovers positions={summary.positions} instruments={instruments} total={summary.total} />
+      </section>
 
       <section className={styles.section}>
         <h2 className={styles.heading}>Что сделать</h2>

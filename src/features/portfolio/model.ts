@@ -34,6 +34,12 @@ export interface PortfolioSummary {
   positions: Position[]
 }
 
+/** Дневное изменение позиции в процентах: вчерашняя стоимость — это сегодняшняя минус прирост. */
+export function dailyPercent(position: Position): number {
+  const yesterday = position.value - position.dailyYield
+  return yesterday > 0 ? (position.dailyYield / yesterday) * 100 : 0
+}
+
 export const TYPE_LABELS: Record<InstrumentType, string> = {
   share: 'Акции',
   bond: 'Облигации',

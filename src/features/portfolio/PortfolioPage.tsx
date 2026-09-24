@@ -10,7 +10,8 @@ import { BondsSection } from '../bonds/BondsSection'
 import { usePositionInstruments } from '../instruments/useInstruments'
 import { useOperations } from '../operations/useOperations'
 import { firstCashFlowDate, portfolioXirr } from '../operations/xirr'
-import { TYPE_LABELS, type PortfolioSummary, type Position } from './model'
+import { DailyMovers } from './DailyMovers'
+import { dailyPercent, TYPE_LABELS, type PortfolioSummary, type Position } from './model'
 import styles from './PortfolioPage.module.css'
 import { usePortfolio } from './usePortfolio'
 
@@ -83,6 +84,7 @@ export function PortfolioPage() {
               <th>Цена</th>
               <th>Стоимость</th>
               <th>Доля</th>
+              <th>За день</th>
               <th>P&amp;L</th>
             </tr>
           </thead>
@@ -99,6 +101,10 @@ export function PortfolioPage() {
           </tbody>
         </table>
       </div>
+      <section className={styles.daily}>
+        <h2 className={styles.dailyHeading}>Движение за день</h2>
+        <DailyMovers positions={portfolio.positions} instruments={instruments} total={portfolio.total} />
+      </section>
       <BondsSection positions={portfolio.positions} instruments={instruments} />
     </>
   )
@@ -137,6 +143,10 @@ function Row({ position, info, share, showAccount }: RowProps) {
       </td>
       <td>{formatMoney(position.value, currency)}</td>
       <td className={table.muted}>{share.toFixed(1)} %</td>
+      <td className={pnlClass(position.dailyYield)}>
+        {formatSignedMoney(position.dailyYield, currency)}
+        <div className={table.muted}>{formatPercent(dailyPercent(position))}</div>
+      </td>
       <td className={pnlClass(position.expectedYield)}>
         {formatSignedMoney(position.expectedYield, currency)}
         <div className={table.muted}>{formatPercent(pnlPct)}</div>

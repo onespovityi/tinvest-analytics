@@ -1,0 +1,104 @@
+.root {
+  font-variant-numeric: tabular-nums;
+}
+
+.summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.net {
+  color: var(--text-muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.4fr) minmax(120px, 2fr) 110px 78px 46px;
+  gap: 10px;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 13px;
+}
+
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* две половины: слева рисуем падение (прижато вправо), справа — рост */
+.half {
+  flex: 1;
+  display: flex;
+  height: 10px;
+}
+
+.half:first-child {
+  justify-content: flex-end;
+}
+
+.bar {
+  height: 100%;
+  border-radius: 2px;
+  min-width: 2px;
+}
+
+.barUp {
+  background: var(--positive);
+}
+
+.barDown {
+  background: var(--negative);
+}
+
+.value,
+.pct {
+  text-align: right;
+}
+
+.share {
+  text-align: right;
+  color: var(--text-muted);
+}
+
+.positive {
+  color: var(--positive);
+}
+
+.negative {
+  color: var(--negative);
+}
+
+.note,
+.empty {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 10px 0 0;
+  max-width: 800px;
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: minmax(90px, 1fr) 100px 68px;
+  }
+
+  .track,
+  .share {
+    display: none;
+  }
+}
