@@ -21,6 +21,8 @@ import { PLAN_TARGETS, TARGET_LABELS, TARGET_TYPES, targetsFromActual, useTarget
 import { useLastVisit } from './useLastVisit'
 
 const DAY_MS = 24 * 60 * 60 * 1000
+/** Горизонт «ближайших выплат»: месяц с запасом, иначе выплата на 32-й день исчезает с глаз. */
+const SOON_DAYS = 45
 
 function formatDateTime(date: Date): string {
   return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -173,7 +175,7 @@ export function SummaryPage() {
   if (error) return <ErrorState error={error} />
   if (isPending || !summary || !targets || !plan) return <Loading text="Собираем сводку…" />
 
-  const soon = upcoming.payments.filter((p) => p.date.getTime() - now.getTime() <= 30 * DAY_MS)
+  const soon = upcoming.payments.filter((p) => p.date.getTime() - now.getTime() <= SOON_DAYS * DAY_MS)
   const soonTotal = soon.reduce((acc, p) => acc + (p.kind === 'maturity' ? 0 : p.total), 0)
   const maxDrift = Math.max(...plan.drifts.map((d) => Math.abs(d.drift)))
 
@@ -187,7 +189,7 @@ export function SummaryPage() {
         .map(([acc, v]) => `${ACCOUNT_LABELS[acc as keyof typeof ACCOUNT_LABELS]} ${formatMoney(v ?? 0)}`)
         .join(' · '),
     },
-    { label: 'Выплаты за 30 дней', value: formatMoney(soonTotal), hint: `${soon.length} событий` },
+    { label: `Выплаты за ${SOON_DAYS} дней`, value: formatMoney(soonTotal), hint: `${soon.length} событий` },
     {
       label: 'Отклонение от цели',
       value: `${maxDrift.toFixed(1)} п.п.`,
@@ -257,9 +259,9 @@ export function SummaryPage() {
       </section>
 
       <section className={styles.section}>
-        <h2 className={styles.heading}>Ближайшие 30 дней</h2>
+        <h2 className={styles.heading}>Ближайшие выплаты</h2>
         {soon.length === 0 ? (
-          <p className={styles.muted}>Выплат и погашений в ближайший месяц нет.</p>
+          <p className={styles.muted}>Выплат и погашений в ближайшие {SOON_DAYS} дней нет.</p>
         ) : (
           <ul className={styles.list}>
             {soon.map((p) => (

@@ -93,7 +93,7 @@ export async function loadBondScreener(account: AccountKey): Promise<BondScreenR
   setProgress(BOND_PROGRESS_KEY, { done: 0, total: universe.length, stage: 'купоны и доходность' })
   const rows = await pool(
     universe,
-    5,
+    3,
     async (b): Promise<BondScreenRow | null> => {
       const pricePct = prices.get(b.uid)
       if (!pricePct) return null

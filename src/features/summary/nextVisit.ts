@@ -6,6 +6,8 @@ const DAY_MS = 24 * 60 * 60 * 1000
 
 /** Раз в месяц заглянуть на структуру — достаточно, если ничего не происходит. */
 const ROUTINE_DAYS = 30
+/** Выплата в этом окне важнее плановой проверки: ради неё и стоит зайти. */
+const PAYMENT_PRIORITY_DAYS = 45
 
 export interface NextVisit {
   date: Date
@@ -48,7 +50,12 @@ export function nextVisit(now: Date, payments: UpcomingPayment[], iis: IisContex
     if (closeWindow > now) candidates.push({ date: closeWindow, reason: 'через два месяца ИИС можно закрывать — решить, что дальше' })
   }
 
-  candidates.push({ date: new Date(now.getTime() + ROUTINE_DAYS * DAY_MS), reason: 'плановая проверка структуры (раз в месяц достаточно)' })
+  // плановую проверку добавляем, только если ближайшей выплаты нет или она далеко:
+  // иначе календарная отметка «через месяц» перебивала бы выплату через месяц и два дня
+  const paymentSoon = payment !== undefined && payment.date.getTime() - now.getTime() <= PAYMENT_PRIORITY_DAYS * DAY_MS
+  if (!paymentSoon) {
+    candidates.push({ date: new Date(now.getTime() + ROUTINE_DAYS * DAY_MS), reason: 'плановая проверка структуры (раз в месяц достаточно)' })
+  }
 
   return candidates.sort((a, b) => a.date.getTime() - b.date.getTime())[0]
 }

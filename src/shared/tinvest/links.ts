@@ -16,15 +16,15 @@ const SECTION: Partial<Record<InstrumentType, string>> = {
 
 /**
  * Страница бумаги в кабинете Т-Инвестиций — там же кнопки «Купить» / «Продать».
- * Акции и фонды — по тикеру, облигации — по ISIN, валюта — по паре (CNYRUB_TOM_CETS → CNYRUB).
+ * Везде адресуем по тикеру: у ОФЗ он свой (SU26249RMFS1), и ISIN там отдаёт 404,
+ * а у корпоративных облигаций тикер и так совпадает с ISIN. Валюта — по паре (CNYRUB_TOM_CETS → CNYRUB).
  * Для рублей и неизвестных типов страницы нет.
  */
 export function instrumentUrl(instrument: LinkableInstrument): string | undefined {
   const section = SECTION[instrument.type]
   if (!section) return undefined
 
-  let id = instrument.ticker
-  if (instrument.type === 'bond') id = instrument.isin || instrument.ticker
+  let id = instrument.ticker || instrument.isin || ''
   if (instrument.type === 'currency') {
     if (id.startsWith('RUB')) return undefined
     id = id.replace(/_.*$/, '').replace(/000UTSTOM$/, 'RUB')

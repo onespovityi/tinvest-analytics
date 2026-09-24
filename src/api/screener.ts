@@ -80,14 +80,17 @@ export interface Consensus {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-/** Повтор при 429: скринер делает сотни запросов, лимит API легко задеть. */
-export async function withRetry<T>(fn: () => Promise<T>, attempts = 4): Promise<T> {
+/**
+ * Повтор при 429: скринер делает сотни запросов, лимит API задевается почти всегда.
+ * Пауза растёт (5, 10, 20, 40, 60 с) — лимиты у брокера минутные, так что ждать приходится долго.
+ */
+export async function withRetry<T>(fn: () => Promise<T>, attempts = 6): Promise<T> {
   for (let i = 0; ; i++) {
     try {
       return await fn()
     } catch (e) {
       if (!(e instanceof ApiError) || e.status !== 429 || i >= attempts - 1) throw e
-      await sleep(3000 * (i + 1))
+      await sleep(Math.min(5000 * Math.pow(2, i), 60_000))
     }
   }
 }

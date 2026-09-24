@@ -30,7 +30,10 @@ export async function request<TResponse>(
 
   if (!response.ok) {
     let code: string | undefined
-    let message = `${service}/${method} → HTTP ${response.status}`
+    let message =
+      response.status === 429
+        ? 'Брокер временно ограничил частоту запросов. Подожди минуту и попробуй снова.'
+        : `${service}/${method} → HTTP ${response.status}`
     try {
       const error = (await response.json()) as { code?: string; message?: string }
       code = error.code

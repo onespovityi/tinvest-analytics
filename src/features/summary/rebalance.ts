@@ -87,6 +87,16 @@ export function rebalance(summary: PortfolioSummary, targets: Targets, instrumen
       suggestions.push({ kind: 'buy', buy: leg })
       remaining.set(d.type, d.gap - leg.amount)
     }
+    // денег мало и в долях они размазались на суммы меньше лота — тогда всё на самый недовешенный тип
+    if (suggestions.length === 0) {
+      for (const d of deficits) {
+        const leg = makeLeg(d.type, budget, summary.positions, instruments)
+        if (leg.lots === 0) continue
+        suggestions.push({ kind: 'buy', buy: leg })
+        remaining.set(d.type, d.gap - leg.amount)
+        break
+      }
+    }
   }
 
   // перекладки: самый перевешенный тип → самый недовешенный, пока отклонение больше порога

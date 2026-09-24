@@ -6,6 +6,8 @@ const SINCE_KEY = 'tinvest-analytics:visit-since'
 const SEEN_KEY = 'tinvest-analytics:visit-seen'
 /** Отлучился меньше чем на полчаса — это ещё тот же визит, точку отсчёта не двигаем. */
 const BREAK_MS = 30 * 60 * 1000
+/** Первый запуск: показываем, что было за последнюю неделю, а не пустой экран. */
+const DEFAULT_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000
 const HEARTBEAT_MS = 60 * 1000
 
 function read(key: string): Date | null {
@@ -26,7 +28,7 @@ function write(key: string, date: Date) {
 }
 
 /**
- * Дата прошлого визита (null — первый раз) и способ «отметить просмотренным».
+ * Дата прошлого визита; в первый раз — неделя назад, чтобы свежие выплаты и сделки не потерялись.
  * Новый визит начинается, если страницу не видели дольше получаса: точкой отсчёта становится
  * момент, когда её видели в последний раз.
  */
@@ -35,7 +37,7 @@ export function useLastVisit(): { since: Date | null; markSeen: () => void } {
     const seen = read(SEEN_KEY)
     const stored = read(SINCE_KEY)
     if (seen && Date.now() - seen.getTime() > BREAK_MS) return seen
-    return stored
+    return stored ?? new Date(Date.now() - DEFAULT_LOOKBACK_MS)
   })
 
   useEffect(() => {

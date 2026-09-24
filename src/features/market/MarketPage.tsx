@@ -52,7 +52,7 @@ function alternativesFor(held: BondRow, rows: BondScreenRow[]): BondScreenRow[] 
 }
 
 function BondsTab({ heldIsins, heldBonds }: { heldIsins: Set<string>; heldBonds: BondRow[] }) {
-  const { data, isPending, error } = useBondScreener()
+  const { data, isPending, error, refetch } = useBondScreener()
   const [kind, setKind] = useState<KindFilter>('all')
   const [horizon, setHorizon] = useState<Horizon>('all')
 
@@ -67,7 +67,7 @@ function BondsTab({ heldIsins, heldBonds }: { heldIsins: Set<string>; heldBonds:
     [data, heldBonds],
   )
 
-  if (error) return <ErrorState error={error} />
+  if (error) return <ErrorState error={error} onRetry={() => refetch()} />
   if (isPending || !data) return <ProgressText progressKey={BOND_PROGRESS_KEY} what="скринер облигаций" />
 
   return (
@@ -164,7 +164,7 @@ function BondsTab({ heldIsins, heldBonds }: { heldIsins: Set<string>; heldBonds:
 }
 
 function SharesTab({ heldIsins }: { heldIsins: Set<string> }) {
-  const { data, isPending, error } = useShareScreener()
+  const { data, isPending, error, refetch } = useShareScreener()
   const [sort, setSort] = useState<ShareSort>('marketCap')
   const [withForecast, setWithForecast] = useState(false)
 
@@ -180,7 +180,7 @@ function SharesTab({ heldIsins }: { heldIsins: Set<string> }) {
     return [...list].sort(by[sort])
   }, [data, sort, withForecast])
 
-  if (error) return <ErrorState error={error} />
+  if (error) return <ErrorState error={error} onRetry={() => refetch()} />
   if (isPending || !data) return <ProgressText progressKey={SHARE_PROGRESS_KEY} what="скринер акций" />
 
   return (
